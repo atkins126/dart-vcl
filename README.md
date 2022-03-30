@@ -7,7 +7,7 @@ Dart implementation of vcl interface C++Builder, Delphi for web application
 [ChangeLog.md](CHANGELOG.md)
 
 ## About
-If you now the programming languages of C ++ Builder or Delphi, 
+If you now the programming languages of C++ Builder or Delphi, 
 with the help of this library you can start creating web applications 
 in the Dart with the familiar interface and Borland components. 
 
@@ -20,7 +20,9 @@ As in windows, communication between windows is carried out using messages.
 
 To create forms, the components TEdit, TComboBox, TPanel, TPageControl, TEdit, 
 TCheckBox and others are implemented. 
-Implemented components TDataSet, TDBGrid for working with databases 
+Implemented components TDataSource, TDataSet, TDataLink, TDBGrid for working with databases 
+
+Added flex component for flexible adjustment of the position of controls in dialog forms
 
 **Warning.** The library was tested only in the browser Google Chrome
 
@@ -32,12 +34,13 @@ import 'package:vcl/vcl.dart';
 void main() async 
 {
   var form = TForm(Application);
+  form.Position = TPosition.ScreenCenter;
   await form.ShowModal();
 }
 ```
 ### Demo
 
-Download [files](https://github.com/ds-42/dart-vcl/tree/main/demo) and open *index.html* in Google Chrome browser
+Press [link](http://dart-vcl.delasoft.org/) for demo application or download last version [files](https://github.com/ds-42/dart-vcl/tree/main/demo) and open *index.html* in Google Chrome browser
 
 [Source files](https://github.com/ds-42/dart-vcl/tree/main/example/form) of demo project 
 

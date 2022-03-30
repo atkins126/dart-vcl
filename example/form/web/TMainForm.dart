@@ -6,6 +6,10 @@ class TMainForm extends TForm
   {
     Position = TPosition.ScreenCenter;
 
+    Constraints
+        ..MinWidth = 300
+        ..MinHeight = 200;
+
     TMenuItem item;
     Menu = TMainMenu(this);
     item = CreateMenuItem(Menu!, 'File');
@@ -30,7 +34,8 @@ class TMainForm extends TForm
         CreateMenuItem(item, 'Fit to page');
 
     item = CreateMenuItem(Menu!, '?');
-      CreateMenuItem(item, 'About');
+      CreateMenuItem(item, 'About')
+        ..OnClick = (Sender) async { await TAboutForm(this).ShowModal(); };
 
     var pages = TPageControl(this)
       ..Align = TAlign.Client
@@ -38,19 +43,26 @@ class TMainForm extends TForm
 
     BuildPanelsPage(pages);
     BuildControlsPage(pages);
+    BuildFlexControlsPage(pages);
     BuildDialogsPage(pages);
+    BuildDataSetPage(pages);
 
-    pages.ActivePageIndex = 0;
 
     var status = TStatusBar(this);
     status.Parent = this;
     status.Panels.Add();
-    status.Panels.Items[0]
-      ..Width = 120
-      ..Text = 'page count: ${ pages.PageCount }';
+    status.Panels.Items[0].Width = 120;
 
-    status.SimpleText = '© dart-vcl, 2021';
+    status.SimpleText = '© dart-vcl [${vcl_lib_version}], ${vcl_lib_date.year}';
 
+    void UpdateStatusText()
+    {
+      status.Panels.Items[0].Text = 'page: ${pages.ActivePageIndex + 1} / ${pages.PageCount}';
+    }
+
+    pages.OnChange = (Sender) => UpdateStatusText();
+
+    UpdateStatusText();
   }
 
   static TMenuItem CreateMenuItem(TComponent Owner, String Caption, [int Index=-1/*, TNotifyEvent ev*/])
@@ -74,6 +86,5 @@ class TMainForm extends TForm
     item.Caption = Caption;
     return item;
   }
-
 
 }

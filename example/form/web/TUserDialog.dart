@@ -12,14 +12,14 @@ class TUserDialog extends TForm
   {
     AutoSize = true;
     Position = TPosition.OwnerFormCenter;
-    BorderStyle = TFormBorderStyle.Dialog;
+    ClientWidth = 250;
     Caption = 'Registration';
 
     TFlexBox(this)
       ..Parent = this
-      ..Width = 250
+      ..Width = ClientWidth
       ..Align = TAlign.Top
-      ..AlignItems = TFlexAlignItems.FlexEnd
+      ..AlignItems = TFlexAlignItem.FlexEnd
       ..Add([
         TLabel(this)
           ..Flex.Width = TMetric(80)
@@ -59,6 +59,7 @@ class TUserDialog extends TForm
         await ShowMessage('Enter user login');
         login.SetFocus();
         Action.Value = TCloseAction.None;
+        return;
       }
 
       var pass = FindComponent('password') as TEdit;

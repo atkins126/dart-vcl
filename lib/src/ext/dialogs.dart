@@ -3,15 +3,14 @@ part of vcl;
 Future<int> MessageBox(dynamic data, String caption, int mode) async
 {
 
-  TButton CreateButton(TWinControl prnt, String cap, TModalResult mr)
+  TButton CreateButton(TWinControl prnt, TModalResult mr)
   {
-    TButton btn = new TButton(prnt);
-    btn.ModalResult = mr;
-    btn.Caption = cap;
-    btn.Parent = prnt;
-    btn.Handle.style.height = null;
-    btn.Handle.style.width = null;
-    return btn;
+    return TButton(prnt)
+      ..ModalResult = mr
+      ..Caption = ModalResults.ResultToStr(mr, Locale.active)
+      ..Parent = prnt
+      ..Handle.style.height = null
+      ..Handle.style.width = null;
   }
 
   String text = data.toString();
@@ -24,90 +23,92 @@ Future<int> MessageBox(dynamic data, String caption, int mode) async
 
   dlg.OnShow = (Sender)
   {
-    DivElement pText = DivElement();
-    pText.style.whiteSpace = 'pre-line';
-    if(text.isNotEmpty && text[0]==' ')
-      pText.text = text.trim();
-    else
-      pText.innerHtml = text;
-    pText.setParent(dlg.Handle.clientHandle);
-
-    TRect r = pText.borderRect;
-    int height = r.height;
-    if(height>60)
+    dlg.WindowHandle!.handle.invisibilityProc(()
     {
-      dlg.ClientWidth = 400;
-      r = pText.borderRect;
-      height = r.height;
-    }
+      DivElement pText = DivElement();
+      pText.style.whiteSpace = 'pre-line';
+      if(text.isNotEmpty && text[0]==' ')
+        pText.text = text.trim();
+      else
+        pText.innerHtml = text;
+      pText.setParent(dlg.Handle.clientHandle);
 
-    int dy = 0;
-    if(height<60)
-    {
-      dy = (60-height)>>1;
-      height = 60;
-    }
-
-    pText.style.textAlign='center';
-    pText.style.paddingTop='${dy}px';
-    pText.style.paddingLeft='5px';
-    pText.style.paddingRight='5px';
-
-    var btns = <TButton?>[null, null, null];
-
-    switch(mode)
-    {
-      case Windows.MB_OK:
-        btns[0] = CreateButton(dlg, 'Ok', TModalResult.Ok);
-        break;
-      case Windows.MB_OKCANCEL:
-        btns[0] = CreateButton(dlg, 'Ok',     TModalResult.Ok);
-        btns[1] = CreateButton(dlg, 'Отмена', TModalResult.Cancel);
-        break;
-      case Windows.MB_YESNO:
-        btns[0] = CreateButton(dlg, 'Да',  TModalResult.Yes);
-        btns[1] = CreateButton(dlg, 'Нет', TModalResult.No);
-        break;
-      case Windows.MB_YESNOCANCEL:
-        btns[0] = CreateButton(dlg, 'Да',     TModalResult.Yes);
-        btns[1] = CreateButton(dlg, 'Нет',    TModalResult.No);
-        btns[2] = CreateButton(dlg, 'Отмена', TModalResult.Cancel);
-        break;
-      case Windows.MB_ABORTRETRYIGNORE:
-        btns[0] = CreateButton(dlg, 'Прервать',   TModalResult.Abort);
-        btns[1] = CreateButton(dlg, 'Повтор',     TModalResult.Retry);
-        btns[2] = CreateButton(dlg, 'Пропустить', TModalResult.Ignore);
-        break;
-    }
-
-    int bwidth = 80;
-    int bheight = 0;
-    int bcount = 0;
-    for(TButton? btn in btns)
-    {
-      if(btn != null)
+      var r = pText.borderRect;
+      int height = r.height;
+      if(height>60)
       {
-        TRect r = btn.Handle.handle.borderRect;
-        if(r.width > bwidth)
-          bwidth = r.width;
-        if(r.height > bheight)
-          bheight = r.height;
-        bcount++;
+        dlg.ClientWidth = 400;
+        r = pText.borderRect;
+        height = r.height;
       }
-    }
 
-    int x = (dlg.ClientWidth - bwidth*bcount - 5*(bcount-1)) >> 1;
-    for(TButton? btn in btns)
-    {
-      if(btn != null)
+      int dy = 0;
+      if(height<60)
       {
-        btn.SetBounds(x, height+5, bwidth, bheight);
-        x+=btn.Width+5;
+        dy = (60-height)>>1;
+        height = 60;
       }
-    }
 
-    dlg.ClientHeight = height + bheight+10;
+      pText.style.textAlign='center';
+      pText.style.paddingTop='${dy}px';
+      pText.style.paddingLeft='5px';
+      pText.style.paddingRight='5px';
 
+      var btns = <TButton?>[null, null, null];
+
+      switch(mode & 0x0F)
+      {
+        case Windows.MB_OK:
+          btns[0] = CreateButton(dlg, TModalResult.Ok);
+          break;
+        case Windows.MB_OKCANCEL:
+          btns[0] = CreateButton(dlg, TModalResult.Ok);
+          btns[1] = CreateButton(dlg, TModalResult.Cancel);
+          break;
+        case Windows.MB_YESNO:
+          btns[0] = CreateButton(dlg, TModalResult.Yes);
+          btns[1] = CreateButton(dlg, TModalResult.No);
+          break;
+        case Windows.MB_YESNOCANCEL:
+          btns[0] = CreateButton(dlg, TModalResult.Yes);
+          btns[1] = CreateButton(dlg, TModalResult.No);
+          btns[2] = CreateButton(dlg, TModalResult.Cancel);
+          break;
+        case Windows.MB_ABORTRETRYIGNORE:
+          btns[0] = CreateButton(dlg, TModalResult.Abort);
+          btns[1] = CreateButton(dlg, TModalResult.Retry);
+          btns[2] = CreateButton(dlg, TModalResult.Ignore);
+          break;
+      }
+
+      var bwidth = 80;
+      var bheight = 0;
+      var bcount = 0;
+      for(TButton? btn in btns)
+      {
+        if(btn != null)
+        {
+          var r = btn.Handle.handle.borderRect;
+          if(r.width > bwidth)
+            bwidth = r.width;
+          if(r.height > bheight)
+            bheight = r.height;
+          bcount++;
+        }
+      }
+
+      int x = (dlg.ClientWidth - bwidth*bcount - 10*(bcount-1)) ~/ 2;
+      for(TButton? btn in btns)
+      {
+        if(btn != null)
+        {
+          btn.SetBounds(x, height + 5, bwidth, bheight);
+          x+=btn.Width + 10;
+        }
+      }
+
+      dlg.ClientHeight = height + bheight + 10;
+    });
   };
 
   TModalResult Result = await dlg.ShowModal();
@@ -133,12 +134,12 @@ Future<void> ShowMessage(dynamic data) async
 
 Future<void> ShowWarningMessage(dynamic data) async
 {
-  await MessageBox(data, 'Внимание', Windows.MB_OK);
+  await MessageBox(data, '${ SysLocale.Warning }', Windows.MB_OK);
 }
 
 Future<void> ShowErrorMessage(dynamic data) async
 {
-  await MessageBox(data, 'Ошибка', Windows.MB_OK);
+  await MessageBox(data, '${ SysLocale.Error }', Windows.MB_OK);
 }
 
 Future<int> ShowQuestionMessage(dynamic data, [int mode = Windows.MB_YESNO]) async
@@ -149,6 +150,7 @@ Future<int> ShowQuestionMessage(dynamic data, [int mode = Windows.MB_YESNO]) asy
 Future<String> InputBox(String ACaption, String APrompt, String ADefault) async
 {
   var form = TForm(Screen.FocusedForm==null? Application : Screen.FocusedForm);
+  form.BorderStyle = TBorderStyle.Dialog;
   form.Position = TPosition.OwnerFormCenter;
   form.Caption = ACaption;
   form.Width = 300;
@@ -172,13 +174,13 @@ Future<String> InputBox(String ACaption, String APrompt, String ADefault) async
 
   int btnLeft = (width-160)~/2;
   var btnOk = TButton(form)
-    ..Caption = 'OK'
+    ..Caption = ModalResults.ResultToStr(TModalResult.Ok, Locale.active)
     ..SetBounds(btnLeft, top, 80, null)
     ..ModalResult = TModalResult.Ok
     ..Parent = form;
 
   TButton(form)
-    ..Caption = 'Отмена'
+    ..Caption = ModalResults.ResultToStr(TModalResult.Cancel, Locale.active)
     ..SetBounds(btnLeft+90, top, 80, null)
     ..ModalResult = TModalResult.Cancel
     ..Parent = form;

@@ -56,6 +56,16 @@ double? tryToDouble(dynamic val, [double? def] )
   return def;
 }
 
+T toEnumDef<T>(dynamic val, T def) =>
+  tryToEnum(val, def)!;
+
+T? tryToEnum<T>(dynamic val, [T? def])
+{
+  if(val is T)
+    return val;
+  return def;
+}
+
 String? tryToString(dynamic val, [String? def] )
 {
   if(val==null)
@@ -77,13 +87,12 @@ TDateTime? toDateDef(dynamic val, [TDateTime? def] )
   if(val is TDateTime)
     return val;
   if(val is int)
-    return TDateTime.system(val);
+    return TDateTime.sysDate(val);
   if(val is String)
   {
-    int d = SysDate.atod(val);
-    if(d != 0)
-      return TDateTime.system(d);
-    return def;
+    var res = TDateTime();
+    if(SysUtils.TryStrToDateTime(val, res))
+      return res;
   }
   return def;
 }

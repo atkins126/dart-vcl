@@ -5,6 +5,17 @@ class HFlexBox extends HControl
   static final FLEXBOX = CLASS_ID('FLEXBOX');
   CLASS_ID get classID => FLEXBOX;
 
+  void defineClassRule(TWndStyle rule)
+  {
+    rule.add('',
+      '${ rule.block }'
+      '${ rule.borderBox }'
+      'background: #cccccc;'
+      'whiteSpace: nowrap;'
+      'overflow: hidden;'
+      'userSelect: none;');
+  }
+
   HFlexBox() : super( DivElement() );
 }
 
@@ -16,7 +27,8 @@ class HPanel extends HControl
   void defineClassRule(TWndStyle rule)
   {
     rule.add('',
-      '${ rule.block }${ rule.borderBox }'
+      '${ rule.block }'
+      '${ rule.borderBox }'
       'background: #cccccc;'
       'whiteSpace: nowrap;'
       'overflow: hidden;'

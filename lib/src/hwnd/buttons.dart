@@ -43,7 +43,12 @@ class HSpeedButton extends HControl
   HSpeedButton() : super( ButtonElement() );
 }
 
-class HCheckBox extends HControl
+class HButtonControl extends HControl
+{
+  HButtonControl(Element elem) : super(elem);
+}
+
+class HCheckBox extends HButtonControl
 {
   static final CHECKBOX = CLASS_ID('CHECKBOX');
   CLASS_ID get classID => CHECKBOX;
@@ -53,7 +58,7 @@ class HCheckBox extends HControl
     final name = classID;
     rule.addFocusStyle();
     rule.add('',
-      '${rule.block}${rule.inline}'
+      '${rule.block}${rule.inline}${rule.borderBox}'
       'padding-top: 1px;');
     rule.add('input',
       'margin:0 2px;'
@@ -117,7 +122,7 @@ class HCheckBox extends HControl
   }
 }
 
-class HRadioButton extends HControl
+class HRadioButton extends HButtonControl
 {
   static final RADIOBUTTON = CLASS_ID('RADIOBUTTON');
   CLASS_ID get classID => RADIOBUTTON;
@@ -126,7 +131,7 @@ class HRadioButton extends HControl
   {
     rule.addFocusStyle();
     rule.add('',
-      '${rule.block}${rule.inline}'
+      '${rule.block}${rule.inline}${rule.borderBox}'
       'padding-top: 1px;');
     rule.add('input',
       'margin: 0 2px;'

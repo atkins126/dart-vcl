@@ -91,10 +91,17 @@ class TCustomLabel extends TWinControl
     return Caption;
   }
 
+  void SetAutoSize(bool Value)
+  {
+    if(WindowHandle != null)
+      (WindowHandle as HLabel).autoSize = Value;
+    super.SetAutoSize(Value);
+  }
+
+
   void CreateWindowHandle(TCreateParams Params)
   {
     WindowHandle = HLabel();
-    (WindowHandle!.handle as LabelElement).text = Params.Caption;
 
   }
 
@@ -204,6 +211,8 @@ class TCustomEdit extends TWinControl
     TabStop = true;
     ParentColor = false;
 
+    Flex.MinWidth = TMetric(100);
+
     AdjustHeight();
   }
 
@@ -249,11 +258,11 @@ class TCustomEdit extends TWinControl
     if(_passwordChar == Value)
       return;
     _passwordChar = Value;
-    if(HandleAllocated())
+    IfHandleAllocated((InputElement input)
     {
-      (Handle.clientHandle as InputElement).type = PasswordChar==''? 'text' : 'password';
+      input.type = PasswordChar==''? 'text' : 'password';
 
-    }
+    });
   }
 
   int get SelStart => GetSelStart();
@@ -262,22 +271,21 @@ class TCustomEdit extends TWinControl
   int GetSelStart()
   {
 
-    if(HandleAllocated())
-      return (Handle.clientHandle as InputElement).selectionStart ?? 0;
-    return 0;
+    return IfHandleAllocated((InputElement input) =>
+      input.selectionStart ?? 0, 0);
   }
 
   void SetSelStart(int Value)
   {
-    if(HandleAllocated())
-      (Handle.clientHandle as InputElement).selectionStart = Value;
+    IfHandleAllocated((InputElement input) =>
+      input.selectionStart = Value );
 
   }
 
   void SetSelectionRange(int start, int length)
   {
-    if(HandleAllocated())
-      (Handle.clientHandle as InputElement).setSelectionRange(start, start+length);
+    IfHandleAllocated((InputElement input) =>
+        input.setSelectionRange(start, start+length) );
   }
 
   int get SelLength => GetSelLength();
@@ -287,9 +295,8 @@ class TCustomEdit extends TWinControl
   {
 
 
-    if(HandleAllocated())
-      return ((Handle.clientHandle as InputElement).selectionEnd??0)-((Handle.clientHandle as InputElement).selectionStart??0);
-    return 0;
+    return IfHandleAllocated((InputElement input) =>
+       (input.selectionEnd??0)-(input.selectionStart??0), 0);
   }
 
   void SetSelLength(int Value)
@@ -306,8 +313,8 @@ class TCustomEdit extends TWinControl
 
   void SelectAll()
   {
-    if(HandleAllocated())
-      (Handle.clientHandle as InputElement).setSelectionRange(0, this.Text.length);
+    IfHandleAllocated((InputElement input) =>
+      input.setSelectionRange(0, this.Text.length) );
 
   }
 
@@ -339,15 +346,11 @@ class TCustomEdit extends TWinControl
   {
     switch(Message.Msg)
     {
-      case CM_GETFLEXPARAMS:
-        super.Dispatch(Message);
-        var Flex = TCMGetFlexParams(Message);
-        Flex.Params.MinWidthOld = 100;
-        return;
+
 
       case CM_ENABLEDCHANGED:
-        if(HandleAllocated())
-          (Handle.clientHandle as InputElement).disabled = !Enabled;
+        IfHandleAllocated((InputElement input) =>
+          input.disabled = !Enabled );
         break;
 
     }
@@ -359,8 +362,8 @@ class TCustomEdit extends TWinControl
         return;
 
       case EM_SETREADONLY:
-        if(HandleAllocated())
-          (Handle.clientHandle as InputElement).readOnly=toBoolDef(Message.WParam, false);
+        IfHandleAllocated((InputElement input) =>
+          input.readOnly=toBoolDef(Message.WParam, false) );
         return;
     }
     super.WndProc(Message);
@@ -386,6 +389,15 @@ class TCustomEdit extends TWinControl
       OnChange!(this);
   }
 
+
+
+  void _cmColorChanged(TMessage Message) // new
+  {
+    if(WindowHandle is HInput)
+      WindowHandle!.setColor(Color);
+
+    super._cmColorChanged(Message);
+  }
 
 
   TNotifyEvent? _onChange;
@@ -521,8 +533,16 @@ abstract class TCustomMemo extends TCustomEdit
   void CreateWindowHandle(TCreateParams Params)
   {
     WindowHandle = HTextArea();
-    (WindowHandle!.handle as TextAreaElement).setMaxLength(MaxLength);
+    var area = WindowHandle as HTextArea;
+    var elem = area.handle as TextAreaElement;
+    elem.setMaxLength(MaxLength);
+    area.wrap = WordWrap;
+    elem.spellcheck = false;
+    elem.text = Params.Caption;
+    if(ReadOnly)
+      elem.readOnly=true;
   }
+
 
 
   TPoint get CaretPos => GetCaretPos();
@@ -539,6 +559,22 @@ abstract class TCustomMemo extends TCustomEdit
   {
 
   }
+
+
+
+  bool _wordWrap = true;
+  bool
+    get WordWrap => _wordWrap;
+    set WordWrap(bool Value)
+    {
+      if(_wordWrap==Value)
+        return;
+      _wordWrap = Value;
+
+      // RecreateWnd;
+      if(HandleAllocated())
+        (WindowHandle as HTextArea).wrap = Value;
+    }
 
 
   void WndProc(TMessage Message)
@@ -590,7 +626,7 @@ abstract class TCustomComboBoxStrings extends TStrings
   dynamic GetObject(int Index)
   {
     dynamic Result = PerformHandle(CB_GETITEMDATA, Index, 0);
-    if(Result == null)
+    if(Result == Windows.CB_ERR)
       this.Error(RTLConsts.SListIndexError, Index);
     return Result;
   }
@@ -713,7 +749,7 @@ abstract class TCustomCombo extends TCustomListControl
       _itemIndex = Value;
     else
     if(GetItemIndex() != Value)
-      PerformHandle(CB_SETCURSEL, Value, 0);
+      PerformHandle(CB_SETCURSEL, Value, 0); // new
   }
 
 
@@ -822,6 +858,11 @@ abstract class TCustomCombo extends TCustomListControl
       return Items.Objects[ndx];
     return null;
   }
+
+  set ItemObject(dynamic val) 
+  {
+    ItemIndex = Items.IndexOfObject(val);
+  }
 }
 
 class TCustomComboBox extends TCustomCombo
@@ -861,7 +902,6 @@ class TCustomComboBox extends TCustomCombo
     WindowHandle = _combo;
 
     WindowHandle!.setColor(Color);
-
     switch(Style)
     {
       case TComboBoxStyle.DropDown:
@@ -876,7 +916,7 @@ class TCustomComboBox extends TCustomCombo
     }
 
     _combo!.input.value = Params.Caption;
-    _combo!.input.setSelectionRange(0, _combo!.input.value!.length);
+    _combo!.input.select(); //setSelectionRange(0, _combo!.input.value!.length);
 
     _combo!.Enabled = Enabled;
 
@@ -890,7 +930,21 @@ class TCustomComboBox extends TCustomCombo
     if(_combo == null)
       _combo = HComboBox();
 
-    return Windows.SendMessage(_combo!, msg, wParam, lParam);
+    var res = Windows.SendMessage(_combo!, msg, wParam, lParam);
+
+    switch(msg)
+    {
+      case CB_SETCURSEL:
+        if(!HandleAllocated())
+        { // Component not ready. Emulate OnSelect
+          this.Text = _combo!.input.value ?? '';
+          Click();
+          Select();
+        }
+        break;
+    }
+
+    return res;
   }
 
   void WndProc(TMessage Message)
@@ -925,6 +979,19 @@ class TComboBox extends TCustomComboBox
 
 }
 
+/// TButtonActionLinkClass = class of TButtonActionLink;
+
+class TButtonActionLink extends TWinControlActionLink
+{
+
+
+  static TClass get classType => TClass( TButtonActionLink, (AOwner) => TButtonActionLink(AOwner) );
+
+  TButtonActionLink(TComponent AOwner) : super(AOwner);
+
+
+}
+
 class TButtonControl extends TWinControl
 {
   bool _clicksDisabled = false;
@@ -940,10 +1007,18 @@ class TButtonControl extends TWinControl
 
   void ActionChange(TObject Sender, bool CheckDefaults)
   {
-
+    super.ActionChange(Sender, CheckDefaults);
+    if(Sender is TCustomAction)
+    {
+      if(!CheckDefaults || (Checked == false))
+        Checked = Sender.Checked;
+    }
   }
 
-
+  TMetaClass GetActionLinkClass()
+  {
+    return TButtonActionLink.classType;
+  }
 
   bool get Checked => GetChecked();
   void set Checked(bool Value) => SetChecked(Value);
@@ -962,6 +1037,16 @@ class TButtonControl extends TWinControl
   {
     switch(Message.Msg)
     {
+      case CM_GETVALUE:
+        Message.Result = Checked;
+        return;
+
+      case CM_SETVALUE:
+        bool? val = tryToBool(Message.LParam);
+        if(val!=null)
+          Checked = val;
+        return;
+
       case WM_LBUTTONDOWN:
       case WM_LBUTTONDBLCLK:
         if(!ComponentState.contains(ComponentStates.Designing) && !Focused())
@@ -994,6 +1079,7 @@ class TButton extends TButtonControl
   TButton(TComponent AOwner) : super(AOwner)
   {
 
+    Flex.Justify = TFlexJustify.Left;
     TabStop = true;
   }
 
@@ -1125,16 +1211,6 @@ class TCustomCheckBox extends TButtonControl
   {
     switch(Message.Msg)
     {
-      case CM_GETVALUE:
-        Message.Result = Checked;
-        return;
-
-      case CM_SETVALUE:
-        bool? val = tryToBool(Message.LParam);
-        if(val!=null)
-          Checked = val;
-        return;
-
       case CM_ENABLEDCHANGED:
         if(HandleAllocated())
         {
@@ -1144,18 +1220,9 @@ class TCustomCheckBox extends TButtonControl
             Handle.handle.setAttribute('disabled','');
         }
         break;
-
-      }
-    super.WndProc(Message);
-  }
-
-  void Dispatch(TMessage Message)
-  {
-    switch(Message.Msg)
-    {
-      case CN_COMMAND: _cnCommand(TWMCommand(Message)); return;
     }
-    super.Dispatch(Message);
+
+    super.WndProc(Message);
   }
 
 
@@ -1181,6 +1248,7 @@ class TCheckBox extends TCustomCheckBox
 
 }
 
+
 class TRadioButton extends TButtonControl
 {
 
@@ -1190,20 +1258,16 @@ class TRadioButton extends TButtonControl
     Width = 113;
     Height = 17;
     ControlStyle.assign( [ControlStyles.SetCaption, ControlStyles.DoubleClicks] );
-    TabStop = true;
 
   }
 
   String get Caption => _getText();
   void set Caption(String Value) => _setText(Value);
 
+
+
   bool _checked = false;
   bool GetChecked() => _checked;
-
-  void Click()
-  {
-    Checked = true; 
-  }
 
   void SetChecked(bool Value)
   {
@@ -1211,27 +1275,25 @@ class TRadioButton extends TButtonControl
     {
       if(Parent == null)
         return;
-
-      for(int i = 0; i<Parent!.ControlCount; i++)
+      for(var Sibling in Parent!.Controls)
       {
-        TControl Sibling = Parent!.Controls[i];
-        if(Sibling != this && Sibling is TRadioButton)
+        if((Sibling != this) && (Sibling is TRadioButton))
         {
-
+            if((Sibling.Action!=null) &&
+               (Sibling.Action is TCustomAction) &&
+               (Sibling.Action as TCustomAction).AutoCheck)
+              (Sibling.Action as TCustomAction).Checked = false;
           Sibling.SetChecked(false);
         }
       }
     }
 
-
     if(_checked == Value)
       return;
-
     _checked = Value;
     TabStop = Value;
     if(HandleAllocated())
       Windows.SendMessage(Handle, BM_SETCHECK, Checked? 1 : 0, 0);
-
     if(Value)
     {
       TurnSiblingsOff();
@@ -1247,9 +1309,22 @@ class TRadioButton extends TButtonControl
     rb.caption.text = Params.Caption;
     rb.radio.checked = _checked;
     WindowHandle = rb;
+//    rb.handle.onClick.listen((event) => Checked=true ); // временно пока не пойму как работает переключение
+  }
 
 
-    rb.handle.onClick.listen((event) => Checked=true ); // временно пока не пойму как работает переключение
+
+  void _cnCommand(TWMCommand Message)
+  {
+    switch(Message.NotifyCode)
+    {
+      case Windows.BN_CLICKED:
+        SetChecked(true);
+        break;
+      case Windows.BN_DOUBLECLICKED:
+        DblClick();
+        break;
+    }
   }
 
 }
@@ -1679,7 +1754,7 @@ class TScrollBar extends TWinControl
   TScrollBar(TComponent AOwner) : super(AOwner)
   {
     Width = 121;
-    Height = GetSystemMetrics(SysMetric.CYHSCROLL);
+    Height = GetSystemMetrics(Windows.SM_CYHSCROLL);
     TabStop = true;
     ControlStyle.assign( [ControlStyles.Framed, ControlStyles.DoubleClicks, ControlStyles.Opaque] );
 
@@ -1695,9 +1770,9 @@ class TScrollBar extends TWinControl
 
     // new
     if(Value == TScrollBarKind.Horizontal)
-      SetBounds(Left, Top, Height, GetSystemMetrics(SysMetric.CYHSCROLL));
+      SetBounds(Left, Top, Height, GetSystemMetrics(Windows.SM_CYHSCROLL));
     else
-      SetBounds(Left, Top, GetSystemMetrics(SysMetric.CXVSCROLL), Width);
+      SetBounds(Left, Top, GetSystemMetrics(Windows.SM_CXVSCROLL), Width);
 
     if(HandleAllocated())
       _scrollBar!.kind=Kind;
